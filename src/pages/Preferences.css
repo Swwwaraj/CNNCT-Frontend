@@ -1,0 +1,75 @@
+.preferences-page .auth-form-content {
+  max-width: 500px;
+}
+
+.category-section {
+  margin-bottom: 24px;
+}
+
+.category-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.category-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.category-card:hover {
+  border-color: #0066ff;
+  background-color: #f5f9ff;
+}
+
+.category-card.selected {
+  border-color: #0066ff;
+  background-color: #f0f7ff;
+}
+
+.category-icon {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.category-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.continue-button {
+  background-color: #0066ff;
+  color: white;
+  margin-top: 16px;
+}
+
+.continue-button:hover {
+  background-color: #0055dd;
+}
+
+.continue-button:disabled {
+  background-color: #e0e0e0;
+  color: #999;
+  cursor: not-allowed;
+}
+
+@media (max-width: 576px) {
+  .category-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
