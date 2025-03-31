@@ -76,7 +76,7 @@ const Preferences = () => {
         </div>
 
         <div className="auth-background">
-          <img src="/images/background.png" alt="Background" className="background-image" />
+          <img src="https://i.postimg.cc/prKhvX2C/Screenshot-2025-03-28-234817.png" alt="Background" className="background-image" />
         </div>
       </div>
     </div>

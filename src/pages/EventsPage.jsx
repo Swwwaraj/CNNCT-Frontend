@@ -22,105 +22,12 @@ const EventsPage = () => {
       setLoading(true)
       const response = await eventService.getEvents()
 
-      // Check for locally stored events
-      const localEvents = JSON.parse(localStorage.getItem("createdEvents") || "[]")
-
       // Format events from backend
-      let formattedEvents = []
-
-      if (response.data && response.data.data && response.data.data.length > 0) {
-        formattedEvents = response.data.data.map((event) => formatEventFromBackend(event))
-      }
-
-      // Combine API events with locally stored events
-      const combinedEvents = [...formattedEvents, ...localEvents]
-
-      if (combinedEvents.length > 0) {
-        setEvents(combinedEvents)
-      } else {
-        // If no events are returned, create some mock events for display
-        setEvents([
-          {
-            id: "mock1",
-            title: "Team Meeting",
-            date: "Mon, 28 Mar",
-            startTime: "10:00 AM",
-            endTime: "11:00 AM",
-            type: "Google Meet",
-            active: true,
-            conflict: false,
-            link: "https://meet.google.com/abc-defg-hij",
-            backgroundColor: "#0066ff",
-          },
-          {
-            id: "mock2",
-            title: "Project Review",
-            date: "Tue, 29 Mar",
-            startTime: "2:30 PM",
-            endTime: "3:30 PM",
-            type: "Zoom",
-            active: true,
-            conflict: false,
-            link: "https://zoom.us/j/123456789",
-            backgroundColor: "#FF6B00",
-          },
-          {
-            id: "mock3",
-            title: "Client Presentation",
-            date: "Wed, 30 Mar",
-            startTime: "1:00 PM",
-            endTime: "2:00 PM",
-            type: "Microsoft Teams",
-            active: true,
-            conflict: true,
-            link: "https://teams.microsoft.com/l/meetup-join/123",
-            backgroundColor: "#10B981",
-          },
-        ])
-      }
+      const formattedEvents = response.data.map((event) => formatEventFromBackend(event))
+      setEvents(formattedEvents)
     } catch (error) {
       console.error("Error fetching events:", error)
       showNotification("Failed to load events", "error")
-
-      // Set mock events even if there's an error
-      setEvents([
-        {
-          id: "mock1",
-          title: "Team Meeting",
-          date: "Mon, 28 Mar",
-          startTime: "10:00 AM",
-          endTime: "11:00 AM",
-          type: "Google Meet",
-          active: true,
-          conflict: false,
-          link: "https://meet.google.com/abc-defg-hij",
-          backgroundColor: "#0066ff",
-        },
-        {
-          id: "mock2",
-          title: "Project Review",
-          date: "Tue, 29 Mar",
-          startTime: "2:30 PM",
-          endTime: "3:30 PM",
-          type: "Zoom",
-          active: true,
-          conflict: false,
-          link: "https://zoom.us/j/123456789",
-          backgroundColor: "#FF6B00",
-        },
-        {
-          id: "mock3",
-          title: "Client Presentation",
-          date: "Wed, 30 Mar",
-          startTime: "1:00 PM",
-          endTime: "2:00 PM",
-          type: "Microsoft Teams",
-          active: true,
-          conflict: true,
-          link: "https://teams.microsoft.com/l/meetup-join/123",
-          backgroundColor: "#10B981",
-        },
-      ])
     } finally {
       setLoading(false)
     }
@@ -128,14 +35,6 @@ const EventsPage = () => {
 
   const toggleEventStatus = async (id) => {
     try {
-      // For mock events, just update the local state
-      if (id.startsWith("mock")) {
-        setEvents(events.map((event) => (event.id === id ? { ...event, active: !event.active } : event)))
-        showNotification("Event status updated successfully")
-        return
-      }
-
-      // For real events, call the API
       await eventService.toggleEventStatus(id)
       // Update the local state
       setEvents(events.map((event) => (event.id === id ? { ...event, active: !event.active } : event)))
@@ -154,26 +53,13 @@ const EventsPage = () => {
   }
 
   const copyEventLink = (event) => {
-    if (event && event.link) {
-      navigator.clipboard.writeText(event.link)
-      showNotification("Successfully copied link")
-    } else {
-      showNotification("No link available to copy", "warning")
-    }
+    navigator.clipboard.writeText(event.link)
+    showNotification("Successfully copied link")
     setShowEventMenu(null)
   }
 
   const deleteEvent = async (id) => {
     try {
-      // For mock events, just update the local state
-      if (id.startsWith("mock")) {
-        setEvents(events.filter((event) => event.id !== id))
-        showNotification("Event deleted successfully")
-        setShowEventMenu(null)
-        return
-      }
-
-      // For real events, call the API
       await eventService.deleteEvent(id)
       setEvents(events.filter((event) => event.id !== id))
       showNotification("Event deleted successfully")
@@ -203,14 +89,6 @@ const EventsPage = () => {
                 </svg>
               )}
               {notification.type === "error" && (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z"
-                    fill="white"
-                  />
-                </svg>
-              )}
-              {notification.type === "warning" && (
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z"
@@ -266,11 +144,15 @@ const EventsPage = () => {
           </div>
         ) : (
           <div className="events-grid">
-            {events && events.length > 0 ? (
+            {events.length > 0 ? (
               events.map((event) => (
                 <div key={event.id} className={`event-card ${!event.active ? "inactive" : ""}`}>
-
-                  <div className="event-header" style={{ borderTopColor: event.backgroundColor || "#0066ff" }}>
+                  {event.conflict && (
+                    <div className="conflict-badge">
+                      
+                    </div>
+                  )}
+                  <div className="event-header">
                     <h2 className="event-title">{event.title}</h2>
                     <button className="menu-button" onClick={() => toggleEventMenu(event.id)}>
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -396,7 +278,12 @@ const EventsPage = () => {
                       </svg>
                     </button>
 
-                    <button className="action-button" onClick={() => copyEventLink(event)}>
+                    <button
+                      className="action-button"
+                      onClick={() => {
+                        copyEventLink(events.find((e) => e.id === event.id))
+                      }}
+                    >
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path
                           d="M6.66667 8.66667C7.05556 9.11111 7.55556 9.44444 8.11111 9.66667C8.66667 9.88889 9.27778 9.94444 9.88889 9.88889C10.5 9.83333 11.0556 9.66667 11.5556 9.38889C12.0556 9.11111 12.5 8.77778 12.8333 8.33333L14.5 6.33333C15.0556 5.66667 15.3333 4.83333 15.3333 4C15.3333 3.16667 15.0556 2.33333 14.5 1.66667C13.9444 1 13.1667 0.611111 12.3333 0.611111C11.5 0.611111 10.7222 1 10.1667 1.66667L9.27778 2.72222"

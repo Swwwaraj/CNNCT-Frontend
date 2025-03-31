@@ -1,6 +1,8 @@
 import axios from "axios"
 
-const API_URL = "https://cnnct-backend-4qs4.onrender.com/api"
+// Updated API URL to use the deployed backend
+const API_URL =
+  process.env.NODE_ENV === "production" ? "https://cnnct-backend-4qs4.onrender.com/api" : "http://localhost:5000/api"
 
 // Create axios instance
 const api = axios.create({
@@ -8,6 +10,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 })
 
 // Log API requests in development

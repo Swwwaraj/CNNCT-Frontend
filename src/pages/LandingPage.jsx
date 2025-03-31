@@ -10,7 +10,6 @@ const LandingPage = () => {
         <div className="header-content">
           <Logo />
           <div>
-            <Link to="/signin" className="sign-in-btn">Log in</Link>
             <Link to="/signup" className="signup-btn">Sign up free</Link>
           </div>
         </div>
@@ -66,7 +65,8 @@ const LandingPage = () => {
                   This is a placeholder for your testimonials and what your client has to say, put them here and make sure its 100% true and meaningful.
                 </p>
                 <div className="testimonial-author">
-                  <div className="author-avatar" />
+                  <div className="author-avatar"
+                   />
                   <div>
                     <p className="author-name">John Mastor</p>
                     <p className="author-position">Director, Spark.com</p>
@@ -84,47 +84,47 @@ const LandingPage = () => {
                 {
                   "name": "Audiomack",
                   "description": "Add an Audiomack player to your Linktree",
-                  "icon": "/images/1.png"
+                  icon: "/images/1.png"
                 },
                 {
                   "name": "Bandsintown",
                   "description": "Drive ticket sales by listing your events",
-                  "icon": "/images/2.png"
+                  icon: "/images/2.png"
                 },
                 {
                   "name": "Bonfire",
                   "description": "Display and sell your custom merch",
-                  "icon": "/images/3.png"
+                  icon: "/images/3.png"
                 },
                 {
                   "name": "Books",
                   "description": "Promote books on your Linktree",
-                  "icon": "/images/4.png"
+                  icon: "/images/4.png"
                 },
                 {
                   "name": "Buy Me A Gift",
                   "description": "Let visitors support you with a small gift",
-                  "icon": "/images/5.png"
+                  icon: "/images/5.png"
                 },
                 {
                   "name": "Cameo",
                   "description": "Make impossible fan connections possible",
-                  "icon": "/images/6.png"
+                  icon: "/images/6.png"
                 },
                 {
                   "name": "Clubhouse",
                   "description": "Let your community in on the conversation",
-                  "icon": "/images/7.png"
+                  icon: "/images/7.png"
                 },
                 {
                   "name": "Community",
                   "description": "Build an SMS subscriber list",
-                  "icon": "/images/8.png"
+                  icon: "/images/8.png"
                 },
                 {
                   "name": "Contact Details",
                   "description": "Easily share downloadable contact details",
-                  "icon": "/images/9.png"
+                  icon: "/images/9.png"
                 }
                 
 ].map((integration, i) => (

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardLayout from "../components/DashboardLayout"
 import { eventService } from "../services/api"
-import { formatEventForBackend, calculateEndTime } from "../utils/formatters"
+import { formatEventForBackend, calculateEndTime, parseDateString } from "../utils/formatters"
 import "./CreateEventPage.css"
 
 const CreateEventPage = () => {
@@ -56,7 +56,7 @@ const CreateEventPage = () => {
     try {
       setLoading(true)
       const response = await eventService.getEvent(eventId)
-      const event = response.data
+      const event = response.data.data
 
       // Format the data for the form
       setEventData({
@@ -64,7 +64,7 @@ const CreateEventPage = () => {
         password: event.password || "",
         hostName: eventData.hostName, // Keep the current host name
         description: event.description || "",
-        date: event.date,
+        date: parseDateString(event.date),
         time: event.startTime,
         timeFormat: event.timeFormat,
         timezone: event.timezone,
@@ -116,21 +116,6 @@ const CreateEventPage = () => {
     }
   }
 
-  const formatDateForBackend = (dateString) => {
-    // If date is already in dd/mm/yy format, return it
-    if (dateString.match(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/)) {
-      return dateString
-    }
-
-    // Otherwise format the current date
-    const today = new Date()
-    const day = String(today.getDate()).padStart(2, "0")
-    const month = String(today.getMonth() + 1).padStart(2, "0")
-    const year = String(today.getFullYear()).slice(-2)
-
-    return `${day}/${month}/${year}`
-  }
-
   const generateMeetLink = () => {
     if (eventData.meetingType === "google_meet") {
       const randomId = Math.random().toString(36).substring(2, 10)
@@ -159,7 +144,7 @@ const CreateEventPage = () => {
         eventId: isEditMode ? id : undefined,
       })
 
-      if (response.hasConflict) {
+      if (response.data.hasConflict) {
         showNotification("Warning: This event overlaps with an existing event", "warning")
         return true
       }
@@ -190,9 +175,6 @@ const CreateEventPage = () => {
     try {
       setLoading(true)
 
-      // Format date if needed
-      const formattedDate = formatDateForBackend(eventData.date)
-
       // Check for overlapping events
       const hasOverlap = await checkForOverlap()
 
@@ -202,7 +184,6 @@ const CreateEventPage = () => {
       // Prepare data for backend
       const eventPayload = formatEventForBackend({
         ...eventData,
-        date: formattedDate,
         startTime: eventData.time,
         endTime,
         conflict: hasOverlap,
@@ -369,7 +350,7 @@ const CreateEventPage = () => {
                         name="date"
                         value={eventData.date}
                         onChange={handleChange}
-                        placeholder="dd/mm/yy"
+                        placeholder="dd/mm/yyyy"
                         className="form-input date-input"
                         required
                       />

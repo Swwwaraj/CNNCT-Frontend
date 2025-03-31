@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import DashboardLayout from "../components/DashboardLayout"
 import { availabilityService, eventService } from "../services/api"
-import { useToast } from "../context/ToastContext"
 import "./AvailabilityPage.css"
 
 const AvailabilityPage = () => {
@@ -11,13 +10,13 @@ const AvailabilityPage = () => {
   const [activeTimeRange, setActiveTimeRange] = useState("week")
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [loading, setLoading] = useState(true)
+  const [notification, setNotification] = useState(null)
   const [events, setEvents] = useState([])
   const [eventTypes, setEventTypes] = useState([])
   const [selectedEventType, setSelectedEventType] = useState("all")
   const [timezone, setTimezone] = useState("(UTC +5:00 Delhi)")
   const [weeklyHours, setWeeklyHours] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
-  const { addToast } = useToast()
 
   const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
   const hours = ["9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM", "4 PM"]
@@ -34,69 +33,16 @@ const AvailabilityPage = () => {
     fetchData()
   }, [])
 
-  // Parse date string to Date object
-  const parseDate = (dateString) => {
-    if (!dateString) return new Date()
-
-    try {
-      // Try different date formats
-      let date
-
-      // Format: dd/mm/yyyy or dd/mm/yy
-      if (dateString.includes("/")) {
-        const parts = dateString.split("/")
-        if (parts.length === 3) {
-          // Handle 2-digit year
-          let year = parts[2]
-          if (year.length === 2) {
-            year = "20" + year
-          }
-          date = new Date(`${year}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`)
-        }
-      } else {
-        // Try standard date parsing
-        date = new Date(dateString)
-      }
-
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        console.warn(`Invalid date: ${dateString}, using current date instead`)
-        return new Date()
-      }
-
-      return date
-    } catch (error) {
-      console.error(`Error parsing date: ${dateString}`, error)
-      return new Date()
-    }
-  }
-
-  // Fetch data from API
   const fetchData = async () => {
     try {
       setLoading(true)
-      console.log("Fetching availability and events data...")
 
       // Fetch availability data
-      try {
-        const availabilityResponse = await availabilityService.getAvailability()
-        if (availabilityResponse.data.data && availabilityResponse.data.data.weeklyHours) {
-          setWeeklyHours(availabilityResponse.data.data.weeklyHours)
-        } else {
-          // Default weekly hours if none found
-          setWeeklyHours([
-            { day: "Sun", available: false, timeSlots: [] },
-            { day: "Mon", available: true, timeSlots: [{ start: "9:00 AM", end: "5:00 PM" }] },
-            { day: "Tue", available: true, timeSlots: [{ start: "9:00 AM", end: "5:00 PM" }] },
-            { day: "Wed", available: true, timeSlots: [{ start: "9:00 AM", end: "5:00 PM" }] },
-            { day: "Thu", available: true, timeSlots: [{ start: "9:00 AM", end: "5:00 PM" }] },
-            { day: "Fri", available: true, timeSlots: [{ start: "9:00 AM", end: "5:00 PM" }] },
-            { day: "Sat", available: false, timeSlots: [] },
-          ])
-        }
-      } catch (error) {
-        console.error("Error fetching availability:", error)
-        // Use default weekly hours
+      const availabilityResponse = await availabilityService.getAvailability()
+      if (availabilityResponse.data.data && availabilityResponse.data.data.weeklyHours) {
+        setWeeklyHours(availabilityResponse.data.data.weeklyHours)
+      } else {
+        // Default weekly hours if none found
         setWeeklyHours([
           { day: "Sun", available: false, timeSlots: [] },
           { day: "Mon", available: true, timeSlots: [{ start: "9:00 AM", end: "5:00 PM" }] },
@@ -109,73 +55,44 @@ const AvailabilityPage = () => {
       }
 
       // Fetch events for calendar
-      try {
-        const eventsResponse = await eventService.getEvents()
-        const fetchedEvents = eventsResponse.data.data || []
+      const eventsResponse = await eventService.getEvents()
+      const fetchedEvents = eventsResponse.data.data || []
 
-        console.log("Fetched events for calendar:", fetchedEvents)
-
-        if (fetchedEvents.length === 0) {
-          setEvents([])
-          setEventTypes([])
-          setLoading(false)
-          return
+      // Format events for calendar display
+      const formattedEvents = fetchedEvents.map((event) => {
+        const eventDate = new Date(event.date)
+        return {
+          id: event._id,
+          title: event.topic,
+          day: days[eventDate.getDay()],
+          date: eventDate.getDate(),
+          startTime: event.startTime,
+          endTime: event.endTime,
+          color: event.backgroundColor || "#e6f4ff",
+          type: event.meetingType,
         }
+      })
 
-        // Format events for calendar display
-        const formattedEvents = fetchedEvents.map((event) => {
-          // Parse the date
-          const eventDate = parseDate(event.date)
+      setEvents(formattedEvents)
 
-          // Format the time for display
-          let startTime = event.startTime || "9:00"
-          if (!startTime.includes("AM") && !startTime.includes("PM") && event.timeFormat) {
-            startTime = `${startTime} ${event.timeFormat}`
-          }
-
-          let endTime = event.endTime || "10:00"
-          if (!endTime.includes("AM") && !endTime.includes("PM") && event.timeFormat) {
-            endTime = `${endTime} ${event.timeFormat}`
-          }
-
-          return {
-            id: event._id,
-            title: event.topic || "Untitled Event",
-            day: days[eventDate.getDay()],
-            date: eventDate.getDate(),
-            month: eventDate.getMonth(),
-            year: eventDate.getFullYear(),
-            startTime: startTime,
-            endTime: endTime,
-            color: event.backgroundColor || "#e6f4ff",
-            type: event.meetingType || "google_meet",
-            rawDate: eventDate,
-          }
-        })
-
-        console.log("Formatted events for calendar:", formattedEvents)
-        setEvents(formattedEvents)
-
-        // Extract unique event types for filter
-        const types = [...new Set(fetchedEvents.map((event) => event.meetingType))].filter(Boolean)
-        setEventTypes(types)
-
-        addToast("Calendar events loaded successfully", "success")
-      } catch (error) {
-        console.error("Error fetching events:", error)
-        setEvents([])
-        setEventTypes([])
-        addToast("Failed to load calendar events", "error")
-      }
+      // Extract unique event types for filter
+      const types = [...new Set(fetchedEvents.map((event) => event.meetingType))]
+      setEventTypes(types)
     } catch (error) {
       console.error("Error fetching data:", error)
-      addToast("Failed to load availability data", "error")
+      showNotification("Failed to load availability data", "error")
     } finally {
       setLoading(false)
     }
   }
 
-  // Get days in the current week
+  const showNotification = (message, type = "success") => {
+    setNotification({ message, type })
+    setTimeout(() => {
+      setNotification(null)
+    }, 3000)
+  }
+
   const getDaysInWeek = () => {
     const days = []
     const currentDate = new Date(selectedDate)
@@ -186,13 +103,11 @@ const AvailabilityPage = () => {
 
     // Get all days in the week
     for (let i = 0; i < 7; i++) {
-      const date = new Date(currentDate)
       days.push({
         day: ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][i],
-        date: date.getDate(),
-        month: date.getMonth(),
-        year: date.getFullYear(),
-        fullDate: date,
+        date: new Date(currentDate).getDate(),
+        month: new Date(currentDate).getMonth(),
+        year: new Date(currentDate).getFullYear(),
       })
       currentDate.setDate(currentDate.getDate() + 1)
     }
@@ -202,7 +117,6 @@ const AvailabilityPage = () => {
 
   const weekDays = getDaysInWeek()
 
-  // Weekly hours management functions
   const addTimeSlot = (dayIndex) => {
     const updatedHours = [...weeklyHours]
     updatedHours[dayIndex].timeSlots.push({ start: "9:00 AM", end: "5:00 PM" })
@@ -236,10 +150,9 @@ const AvailabilityPage = () => {
       await availabilityService.updateAvailability({
         weeklyHours: updatedHours,
       })
-      addToast("Availability updated successfully", "success")
     } catch (error) {
       console.error("Error saving availability:", error)
-      addToast("Failed to save availability", "error")
+      showNotification("Failed to save availability", "error")
     }
   }
 
@@ -247,7 +160,7 @@ const AvailabilityPage = () => {
     const sourceDay = weeklyHours[dayIndex]
 
     // Show notification to select which days to copy to
-    addToast("Select days to copy this schedule to", "info")
+    showNotification("Select days to copy this schedule to", "info")
 
     // In a real implementation, you would show a modal here
     // For now, we'll just copy to all other days
@@ -263,10 +176,9 @@ const AvailabilityPage = () => {
 
     setWeeklyHours(updatedHours)
     saveAvailability(updatedHours)
-    addToast("Schedule copied to other days", "success")
+    showNotification("Schedule copied to other days", "success")
   }
 
-  // Calendar navigation functions
   const handlePrevWeek = () => {
     const newDate = new Date(selectedDate)
     newDate.setDate(newDate.getDate() - 7)
@@ -283,17 +195,6 @@ const AvailabilityPage = () => {
     setSelectedDate(new Date())
   }
 
-  // Function to check if two dates are the same day
-  const isSameDay = (date1, date2) => {
-    if (!date1 || !date2) return false
-    return (
-      date1.getDate() === date2.getDate() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getFullYear() === date2.getFullYear()
-    )
-  }
-
-  // Filter events for the current week view
   const filteredEvents = events.filter((event) => {
     // Filter by event type
     if (selectedEventType !== "all" && event.type !== selectedEventType) {
@@ -305,114 +206,47 @@ const AvailabilityPage = () => {
       return false
     }
 
-    // For week view, check if the event is in the current week
-    if (activeTimeRange === "week") {
-      // Check if the event date is in the current week
-      return weekDays.some((day) => isSameDay(day.fullDate, event.rawDate))
-    }
-
     return true
   })
-
-  // Function to get time index for event placement
-  const getTimeIndex = (timeString) => {
-    if (!timeString) return 0
-
-    try {
-      // Extract hour from time string
-      let hour
-      let ampm
-
-      if (timeString.includes(":")) {
-        const parts = timeString.split(":")
-        hour = Number.parseInt(parts[0])
-
-        // Check for AM/PM in the second part
-        if (parts[1].includes("AM")) {
-          ampm = "AM"
-        } else if (parts[1].includes("PM")) {
-          ampm = "PM"
-        }
-      } else {
-        hour = Number.parseInt(timeString)
-      }
-
-      // If AM/PM not found in split, check the whole string
-      if (!ampm) {
-        if (timeString.includes("AM")) {
-          ampm = "AM"
-        } else if (timeString.includes("PM")) {
-          ampm = "PM"
-        } else {
-          // Default to AM if no AM/PM specified
-          ampm = "AM"
-        }
-      }
-
-      // Adjust hour for PM
-      if (ampm === "PM" && hour < 12) {
-        hour += 12
-      } else if (ampm === "AM" && hour === 12) {
-        hour = 0
-      }
-
-      // Map to our hours array
-      for (let i = 0; i < hours.length; i++) {
-        const hourPart = hours[i].split(" ")[0]
-        const ampmPart = hours[i].split(" ")[1]
-        let hourValue = Number.parseInt(hourPart)
-
-        if (ampmPart === "PM" && hourValue < 12) {
-          hourValue += 12
-        } else if (ampmPart === "AM" && hourValue === 12) {
-          hourValue = 0
-        }
-
-        if (hourValue === hour) {
-          return i
-        }
-      }
-
-      // Default to first hour if not found
-      return 0
-    } catch (error) {
-      console.error("Error parsing time:", timeString, error)
-      return 0
-    }
-  }
-
-  const refreshCalendar = () => {
-    fetchData()
-    addToast("Refreshing calendar...", "info")
-  }
 
   return (
     <DashboardLayout>
       <div className="availability-page">
+        {notification && (
+          <div className={`notification ${notification.type}`}>
+            <div className="notification-content">
+              {notification.type === "success" && (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z"
+                    fill="white"
+                  />
+                </svg>
+              )}
+              {notification.type === "error" && (
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z"
+                    fill="white"
+                  />
+                </svg>
+              )}
+              {notification.message}
+            </div>
+            <button className="close-notification" onClick={() => setNotification(null)}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 4L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M4 4L12 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         <div className="page-header">
           <div>
             <h1 className="page-title">Availability</h1>
             <p className="page-description">Configure times when you are available for bookings</p>
           </div>
-          <button onClick={refreshCalendar} className="refresh-button">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M14.6667 8C14.6667 11.6819 11.6819 14.6667 8 14.6667C4.3181 14.6667 1.33333 11.6819 1.33333 8C1.33333 4.3181 4.3181 1.33333 8 1.33333"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M14.6667 1.33333L8 8"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Refresh
-          </button>
         </div>
 
         <div className="view-toggle">
@@ -616,32 +450,40 @@ const AvailabilityPage = () => {
                     {hours.map((hour, hourIndex) => (
                       <div key={hourIndex} className="hour-cell">
                         {filteredEvents
-                          .filter((event) => isSameDay(day.fullDate, event.rawDate))
+                          .filter(
+                            (event) =>
+                              event.day === day.day &&
+                              event.date === day.date &&
+                              hourIndex ===
+                                hours.indexOf(
+                                  event.startTime.split(":")[0] + " " + event.startTime.split(" ")[1]?.toUpperCase() ||
+                                    "AM",
+                                ),
+                          )
                           .map((event) => {
-                            // Get the hour index for placement
-                            const startHourIndex = getTimeIndex(event.startTime)
+                            // Calculate event duration in hours
+                            const startHour = hours.indexOf(
+                              event.startTime.split(":")[0] + " " + event.startTime.split(" ")[1]?.toUpperCase() ||
+                                "AM",
+                            )
+                            const endHour = hours.indexOf(
+                              event.endTime.split(":")[0] + " " + event.endTime.split(" ")[1]?.toUpperCase() || "AM",
+                            )
+                            const duration = endHour - startHour > 0 ? endHour - startHour : 1
 
-                            // Only render if this is the starting hour cell
-                            if (hourIndex === startHourIndex) {
-                              // Calculate duration (default to 1 if can't determine)
-                              const endHourIndex = getTimeIndex(event.endTime)
-                              const duration = endHourIndex > startHourIndex ? endHourIndex - startHourIndex : 1
-
-                              return (
-                                <div
-                                  key={event.id}
-                                  className="event-item"
-                                  style={{
-                                    backgroundColor: event.color,
-                                    height: `${duration * 60}px`,
-                                  }}
-                                >
-                                  <div className="event-time">{event.startTime}</div>
-                                  <div className="event-title">{event.title}</div>
-                                </div>
-                              )
-                            }
-                            return null
+                            return (
+                              <div
+                                key={event.id}
+                                className="event-item"
+                                style={{
+                                  backgroundColor: event.color,
+                                  height: `${duration * 60}px`,
+                                }}
+                              >
+                                <div className="event-time">{event.startTime}</div>
+                                <div className="event-title">{event.title}</div>
+                              </div>
+                            )
                           })}
                       </div>
                     ))}

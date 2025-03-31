@@ -8,25 +8,24 @@ export const formatDate = (dateString) => {
 
     // Handle different date formats
     let date
-    if (dateString.includes("/")) {
-      // Handle dd/mm/yyyy or dd/mm/yy format
+    if (typeof dateString === "string" && dateString.includes("/")) {
+      // Handle dd/mm/yyyy format
       const parts = dateString.split("/")
       if (parts.length === 3) {
-        // Handle 2-digit year
-        let year = parts[2]
-        if (year.length === 2) {
-          year = "20" + year
-        }
-        date = new Date(`${year}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`)
+        const [day, month, year] = parts
+        // Ensure we have a 4-digit year
+        const fullYear = year.length === 2 ? `20${year}` : year
+        date = new Date(`${fullYear}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`)
+      } else {
+        date = new Date(dateString)
       }
     } else {
-      // Try standard date parsing
       date = new Date(dateString)
     }
 
     if (isNaN(date.getTime())) {
-      console.warn(`Invalid date: ${dateString}, using current date instead`)
-      date = new Date()
+      console.warn("Invalid date:", dateString)
+      return dateString // Return original if parsing fails
     }
 
     const dayName = days[date.getDay()]
@@ -36,11 +35,7 @@ export const formatDate = (dateString) => {
     return `${dayName}, ${dayNum} ${monthName}`
   } catch (error) {
     console.error("Date formatting error:", error)
-    // Return a fallback date if there's an error
-    const today = new Date()
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    return `${days[today.getDay()]}, ${today.getDate()} ${months[today.getMonth()]}`
+    return dateString
   }
 }
 
@@ -90,21 +85,9 @@ export const formatEventFromBackend = (event) => {
 
 // Format event data from frontend to backend
 export const formatEventForBackend = (eventData) => {
-  // Ensure date is in the correct format (dd/mm/yy)
-  let formattedDate = eventData.date
-  if (!formattedDate.includes("/")) {
-    const date = new Date(formattedDate)
-    if (!isNaN(date.getTime())) {
-      const day = String(date.getDate()).padStart(2, "0")
-      const month = String(date.getMonth() + 1).padStart(2, "0")
-      const year = String(date.getFullYear()).slice(-2)
-      formattedDate = `${day}/${month}/${year}`
-    }
-  }
-
   return {
     topic: eventData.topic || eventData.title,
-    date: formattedDate,
+    date: eventData.date,
     startTime: eventData.startTime || eventData.time,
     endTime: eventData.endTime,
     timeFormat: eventData.timeFormat || "AM",
@@ -182,6 +165,41 @@ export const calculateEndTime = (startTime, duration, timeFormat) => {
   } catch (error) {
     console.error("End time calculation error:", error)
     return ""
+  }
+}
+
+// Parse date string to a consistent format
+export const parseDateString = (dateString) => {
+  if (!dateString) return ""
+
+  try {
+    // Handle different date formats
+    let date
+    if (typeof dateString === "string" && dateString.includes("/")) {
+      // Handle dd/mm/yyyy format
+      const parts = dateString.split("/")
+      if (parts.length === 3) {
+        const [day, month, year] = parts
+        // Ensure we have a 4-digit year
+        const fullYear = year.length === 2 ? `20${year}` : year
+        return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${fullYear}`
+      }
+    }
+
+    // If it's not in dd/mm/yyyy format, try to convert it
+    date = new Date(dateString)
+    if (!isNaN(date.getTime())) {
+      const day = date.getDate().toString().padStart(2, "0")
+      const month = (date.getMonth() + 1).toString().padStart(2, "0")
+      const year = date.getFullYear()
+      return `${day}/${month}/${year}`
+    }
+
+    // If all else fails, return the original
+    return dateString
+  } catch (error) {
+    console.error("Date parsing error:", error)
+    return dateString
   }
 }
 
