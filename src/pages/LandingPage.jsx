@@ -4,6 +4,45 @@ import "./LandingPage.css"
 
 
 const LandingPage = () => {
+  const integrations = [
+    {
+      id: 1,
+      name: "Alice Johnson",
+      title: "CEO, TechCorp",
+      description:
+        "This tool has revolutionized our workflow. Highly recommend it to anyone in the industry.",
+      profileImage: "https://randomuser.me/api/portraits/women/44.jpg",
+      bgColor: "#f5f5f5",
+    },
+    {
+      id: 2,
+      name: "Robert Smith",
+      title: "CTO, InnovateX",
+      description:
+        "Incredible experience using this platform. The automation features saved us months of work.",
+      profileImage: "https://randomuser.me/api/portraits/men/45.jpg",
+      bgColor: "#ffffff",
+    },
+    {
+      id: 3,
+      name: "Sophie Williams",
+      title: "Founder, Creatives Inc.",
+      description:
+        "This service has streamlined our operations, allowing us to focus on growth and innovation.",
+      profileImage: "https://randomuser.me/api/portraits/women/46.jpg",
+      bgColor: "#ffffff",
+    },
+    {
+      id: 4,
+      name: "James Brown",
+      title: "Director, SoftTech",
+      description:
+        "User-friendly interface with robust features. A must-have tool for any organization.",
+      profileImage: "https://randomuser.me/api/portraits/men/47.jpg",
+      bgColor: "#f5f5f5",
+    },
+  ];
+
   return (
     <div className="landing-page">
       <header className="landing-header">
@@ -127,18 +166,18 @@ const LandingPage = () => {
                   icon: "/images/9.png"
                 }
                 
-].map((integration, i) => (
-              <div key={i} className="integration-card">
-                <div className="integration-icon" />
-                <div className="integration-content">
-                  <h3 className="integration-name">{integration.name}</h3>
-                  <p className="integration-description">{integration.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </main>
+            ].map((integration, i) => (
+                          <div key={i} className="integration-card">
+                            <div className="integration-icon" />
+                            <div className="integration-content">
+                              <h3 className="integration-name">{integration.name}</h3>
+                              <p className="integration-description">{integration.description}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </main>
 
       <footer className="landing-footer">
         <div className="footer-content">
